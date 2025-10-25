@@ -1,8 +1,8 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy Vite App to GitHub Pages
 
 on:
   push:
-    branches: [ main ]  # chạy khi bạn push lên branch main
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,11 +16,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -31,10 +32,10 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Upload build output
+      - name: Upload production files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist   # hoặc ./build nếu dự án của bạn tạo thư mục này
+          path: dist
 
   deploy:
     environment:
