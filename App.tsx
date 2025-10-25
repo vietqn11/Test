@@ -4,7 +4,7 @@ import Header from './components/Header';
 import StoryCard from './components/StoryCard';
 import StoryView from './components/StoryView';
 import LoadingSpinner from './components/LoadingSpinner';
-import { generateStories, generateStoryContent } from './services/geminiService';
+import { generateStories, generateStoryContent, generateStoryImage } from './services/geminiService';
 import type { Story } from './types';
 
 const App: React.FC = () => {
@@ -20,14 +20,28 @@ const App: React.FC = () => {
     setSelectedStory(null);
     try {
       const storyIdeas = await generateStories();
-      const storiesWithImages: Story[] = storyIdeas.map((idea: {title: string, summary: string}, index: number) => ({
-        id: `${Date.now()}-${index}`,
-        title: idea.title,
-        summary: idea.summary,
-        imageUrl: `https://picsum.photos/seed/${idea.title.replace(/\s/g, '')}/800/600`,
-        isGeneratingContent: false,
-      }));
+
+      const storiesPromises = storyIdeas.map(async (idea: {title: string, summary: string}, index: number) => {
+        let imageUrl = `https://picsum.photos/seed/${idea.title.replace(/\s/g, '')}/800/600`; // Fallback image
+        try {
+            imageUrl = await generateStoryImage(idea.summary);
+        } catch (imgError) {
+            console.error(`Failed to generate image for "${idea.title}":`, imgError);
+            // The fallback URL will be used
+        }
+
+        return {
+            id: `${Date.now()}-${index}`,
+            title: idea.title,
+            summary: idea.summary,
+            imageUrl, // Use generated or fallback image
+            isGeneratingContent: false,
+        };
+      });
+
+      const storiesWithImages = await Promise.all(storiesPromises);
       setStories(storiesWithImages);
+
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');
     } finally {
